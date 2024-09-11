@@ -361,3 +361,16 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/AtivosTC5.Application/obj/Debug/net8.0/AtivosTC5.Application.AssemblyInfo.cs
+/AtivosTC5.Application/obj/Debug/net8.0/AtivosTC5.Application.AssemblyInfoInputs.cache
+/AtivosTC5.Application/obj/Debug/net8.0/AtivosTC5.Application.assets.cache
+/AtivosTC5.Application/obj/Debug/net8.0/AtivosTC5.Application.GeneratedMSBuildEditorConfig.editorconfig
+/AtivosTC5.Domain/obj/Debug/net8.0/AtivosTC5.Domain.AssemblyInfo.cs
+/AtivosTC5.Domain/obj/Debug/net8.0/AtivosTC5.Domain.AssemblyInfoInputs.cache
+/AtivosTC5.Domain/obj/Debug/net8.0/AtivosTC5.Domain.assets.cache
+/AtivosTC5.Domain/obj/Debug/net8.0/AtivosTC5.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/AtivosTC5.Presentation/obj/Debug/net8.0/AtivosTC5.Presentation.AssemblyInfo.cs
+/AtivosTC5.Presentation/obj/Debug/net8.0/AtivosTC5.Presentation.AssemblyInfoInputs.cache
+/AtivosTC5.Presentation/obj/Debug/net8.0/AtivosTC5.Presentation.assets.cache
+/AtivosTC5.Presentation/obj/Debug/net8.0/AtivosTC5.Presentation.csproj.AssemblyReference.cache
+/AtivosTC5.Presentation/obj/Debug/net8.0/AtivosTC5.Presentation.GeneratedMSBuildEditorConfig.editorconfig

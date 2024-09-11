@@ -1,59 +1,143 @@
-﻿using AtivosTC5.Domain.Models.Requests;
-using AtivosTC5.Tests.Helper;
-using FluentAssertions;
+﻿using AtivosTC5.Application.Services;
+using AtivosTC5.Domain.Entities;
+using AtivosTC5.Domain.Interfaces.Services;
+using AtivosTC5.Domain.Models;
+using AtivosTC5.Domain.ValueObjects;
+using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
-namespace AtivosTC5.Tests
+namespace AtivosTC5.Application.Tests.Services
 {
-    public class PortfolioTest
+    public class PortfolioAppServiceTests
     {
-        [Fact]
-        public async Task Test_Portfolio_Post_Returns_OK()
-        {
-            var content = TestHelper.CreateContent(new PortfolioRequestModel { Descricao = "Portfolio Criado nas rotinas de teste de integração", Nome = "Portfolio de Teste" });
-            var result = await TestHelper.CreateClient().PostAsync($"api/portfolio/cadastra-portfolio", content);
+        private readonly Mock<IPortfolioDomainService> _mockDomainService;
+        private readonly PortfolioAppService _portfolioAppService;
 
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        public PortfolioAppServiceTests()
+        {
+            _mockDomainService = new Mock<IPortfolioDomainService>();
+            _portfolioAppService = new PortfolioAppService(_mockDomainService.Object);
         }
 
         [Fact]
-        public async Task Test_Portfolio_Post_Returns_BadRequest()
+        public async Task GetPortfolioPorId_ValidId_ReturnsPortfolioResponseModel()
         {
-            var content = TestHelper.CreateContent(new PortfolioRequestModel { Descricao = "Portfolio Criado nas rotinas de teste de integração" });
-            var result = await TestHelper.CreateClient().PostAsync($"api/portfolio/cadastra-portfolio", content);
+            // Arrange
+            var portfolioId = 1;
+            var portfolio = new Portfolio
+            {
+                Id = portfolioId,
+                Descricao = "Meu Portfolio",
+                Usuario_Id = 123,
+                portfolioAtivos = new List<PortfolioAtivo>
+                {
+                    new PortfolioAtivo
+                    {
+                        Ativo_Id = 1,
+                        Quantidade = 10,
+                        ativo = new Ativo
+                        {
+                            Sigla = "AAPL",
+                            ativoTipo = new AtivoTipo { Id = 1, Nome = "Ação" }
+                        }
+                    }
+                }
+            };
 
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+            _mockDomainService.Setup(x => x.ObterPorid(portfolioId)).ReturnsAsync(portfolio);
+
+            // Act
+            var result = await _portfolioAppService.GetPortfolioPorId(portfolioId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(portfolio.Descricao, result.Descricao);
+            Assert.Equal(portfolio.Usuario_Id, result.Usuario_Id);
+            Assert.Equal(portfolioId, result.Portifolio_Id);
+            Assert.Single(result.Ativos);
+            Assert.Equal("AAPL", result.Ativos.First().Sigla);
         }
-        
+
         [Fact]
-        public async Task Test_Portfolio_GetById_Returns_OK()
+        public async Task GetPortfolioPorId_InvalidId_ThrowsException()
         {
-             await Test_Portfolio_Post_Returns_OK();
-            var result = await TestHelper.CreateClient().GetAsync($"api/portfolio/obter-portifolio-id/1");
+            // Arrange
+            var portfolioId = 1;
+            _mockDomainService.Setup(x => x.ObterPorid(portfolioId)).ReturnsAsync((Portfolio)null);
 
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _portfolioAppService.GetPortfolioPorId(portfolioId));
+            Assert.Equal("Portfolio Não Cadastrado", exception.Message);
         }
 
         [Fact]
-        public async Task Test_Portfolio_GetById_Returns_BadRequest()
+        public async Task GetPortfolioPorIdUsuario_ValidUserId_ReturnsPortfolioResponseModels()
         {
+            // Arrange
+            var userId = 123;
+            var portfolios = new List<Portfolio>
+            {
+                new Portfolio
+                {
+                    Id = 1,
+                    Descricao = "Portfolio 1",
+                    Usuario_Id = userId,
+                    portfolioAtivos = new List<PortfolioAtivo>
+                    {
+                        new PortfolioAtivo
+                        {
+                            Ativo_Id = 1,
+                            Quantidade = 10,
+                            ativo = new Ativo
+                            {
+                                Sigla = "AAPL",
+                                ativoTipo = new AtivoTipo { Id = 1, Nome = "Ação" }
+                            }
+                        }
+                    }
+                }
+            };
 
-            var result = await TestHelper.CreateClient().GetAsync($"api/portfolio/obter-portifolio-id/-1");
+            _mockDomainService.Setup(x => x.ObterPoridUsuario(userId)).ReturnsAsync(portfolios);
 
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+            // Act
+            var result = await _portfolioAppService.GetPortfolioPorIdUsuario(userId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Single(result);
+            Assert.Equal(portfolios.First().Descricao, result.First().Descricao);
         }
 
         [Fact]
-        public async Task Test_Portfolio_GetByUser_Returns_OK()
+        public async Task GetPortfolioPorIdUsuario_InvalidUserId_ThrowsException()
         {
-            var result = await TestHelper.CreateClient().GetAsync($"api/portfolio/obter-lista-por-usuario");
+            // Arrange
+            var userId = 123;
+            _mockDomainService.Setup(x => x.ObterPoridUsuario(userId)).ReturnsAsync((List<Portfolio>)null);
 
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _portfolioAppService.GetPortfolioPorIdUsuario(userId));
+            Assert.Equal("Portfolio Não Cadastrado", exception.Message);
         }
 
+        [Fact]
+        public async Task PostPortfolio_ValidModel_ReturnsSuccessMessage()
+        {
+            // Arrange
+            var portfolio = new Portfolio { Descricao = "Novo Portfolio", Usuario_Id = 123 };
+            var expectedResponse = "Portfolio gravado com sucesso";
+            _mockDomainService.Setup(x => x.GravaPortfolio(portfolio)).ReturnsAsync(expectedResponse);
+
+            // Act
+            var result = await _portfolioAppService.PostPortfolio(portfolio);
+
+            // Assert
+            Assert.Equal(expectedResponse, result);
+        }
     }
 }

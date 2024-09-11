@@ -1,107 +1,103 @@
-﻿using AtivosTC5.Application.Interfaces;
-using AtivosTC5.Application.Services;
+﻿using AtivosTC5.Application.Services;
 using AtivosTC5.Domain.Entities;
-using AtivosTC5.Domain.Interfaces.Repositories;
+using AtivosTC5.Domain.Interfaces.Services;
 using AtivosTC5.Domain.Models.Requests;
 using AtivosTC5.Domain.Models.Responses;
-using AtivosTC5.Presentation.Controllers;
-using AtivosTC5.Tests.Helper;
-using Bogus;
-using Bogus.DataSets;
-using FluentAssertions;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Moq;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Xunit;
 
-namespace AtivosTC5.Tests
+namespace AtivosTC5.Tests.Application.Services
 {
-    public class UsuariosTest
+    public class UsuarioAppServiceTests
     {
+        private readonly Mock<IUsuarioDomainService> _mockUsuarioDomainService;
+        private readonly UsuarioAppService _usuarioAppService;
 
-        Faker faker = new Faker("pt_BR");
-        CriarContaRequestModel _request;
-
-        public UsuariosTest()
+        public UsuarioAppServiceTests()
         {
+            _mockUsuarioDomainService = new Mock<IUsuarioDomainService>();
+            _usuarioAppService = new UsuarioAppService(_mockUsuarioDomainService.Object);
+        }
 
-            _request = new CriarContaRequestModel
+        [Fact]
+        public void CriarConta_ValidaUsuario_CriaContaComSucesso()
+        {
+            // Arrange
+            var requestModel = new CriarContaRequestModel
             {
-                Nome = faker.Person.FullName,
-                Email = faker.Person.Email,
-                Senha = "SenhaTeste",
+                Nome = "Teste Usuario",
+                Email = "teste@usuario.com",
+                Senha = "senha123"
             };
-        }
 
-        [Fact]
-        public async Task Test_Usuarios_Post_Returns_Created()
-        {
-            var content = TestHelper.CreateContent(_request);
-            var response = await TestHelper.CreateClient().PostAsync("api/usuario/Criar-Conta", content);
-            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Created);
-
-        }
-
-        [Fact]
-        public async Task Test_Usuarios_Post_Returns_BadRequest()
-        {
-            var User = UserTeste();
-
-            var content = TestHelper.CreateContent(User);
-            var result = await TestHelper.CreateClient().PostAsync("api/usuario/Criar-Conta", content);
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
-        }
-
-        [Fact]
-        public async Task Test_Usuarios_GetById_Returns_OK()
-        {
-            var result = await TestHelper.CreateClient().GetAsync($"api/usuario/obter-por-usuario-id/1");
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-        }
-
-        [Fact]
-        public async Task Test_Usuarios_GetById_Returns_BadRequest()
-        {
-            var result = await TestHelper.CreateClient().GetAsync($"api/usuario/obter-por-usuario-id/-1");
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
-        }
-
-        [Fact]
-        public async Task Test_Usuarios_Autenticar_Returns_OK()
-        {
-          
-            var content = TestHelper.CreateContent(new AutenticarRequestModel { Email = UserTeste().Email, Senha = UserTeste().Senha });
-            var result = await TestHelper.CreateClient().PostAsync($"api/usuario/Autenticar",content);
-            var Token = TestHelper.ReadContent<AutenticarResponseModel>(result).AccessToken;
-
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-        
-        }
-
-        [Fact]
-        public async Task Test_Usuarios_Autenticar_Returns_BadRequest()
-        {
-
-            var content = TestHelper.CreateContent(new AutenticarRequestModel { Email = "Email@SemCad.com.br", Senha = "SenhaNãoCad" });
-            var result = await TestHelper.CreateClient().PostAsync($"api/usuario/Autenticar", content);
-
-            result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
-        }
-
-        private CriarContaRequestModel UserTeste()
-        {
-            return _request = new CriarContaRequestModel
+            var usuario = new Usuario
             {
-                Nome = "UserTeste",
-                Email = "UserTeste@teste.com",
-                Senha = "UserTeste",
+                Id = 1,
+                Nome = requestModel.Nome,
+                Email = requestModel.Email,
+                Senha = requestModel.Senha
             };
+
+            _mockUsuarioDomainService.Setup(s => s.CriarConta(It.IsAny<Usuario>())).Verifiable();
+
+            // Act
+            var result = _usuarioAppService.CriarConta(requestModel);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Parabéns! Sua conta de usuário foi criada com sucesso.", result.Mensagem);
+            Assert.Equal(requestModel.Nome, result.Nome);
+            Assert.Equal(requestModel.Email, result.Email);
+            _mockUsuarioDomainService.Verify(s => s.CriarConta(It.Is<Usuario>(u => u.Nome == requestModel.Nome &&
+                                                                                  u.Email == requestModel.Email)), Times.Once);
         }
 
+        [Fact]
+        public void Autenticar_UsuarioValido_RetornaRespostaComSucesso()
+        {
+            // Arrange
+            var requestModel = new AutenticarRequestModel
+            {
+                Email = "teste@usuario.com",
+                Senha = "senha123"
+            };
+
+            var usuario = new Usuario
+            {
+                Id = 1,
+                Nome = "Teste Usuario",
+                Email = requestModel.Email,
+                AccessToken = "token_jwt"
+            };
+
+            _mockUsuarioDomainService.Setup(s => s.Autenticar(requestModel.Email, requestModel.Senha)).Returns(usuario);
+
+            // Act
+            var result = _usuarioAppService.Autenticar(requestModel);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Autenticação realizada com sucesso.", result.Mensagem);
+            Assert.Equal(usuario.Id, result.Id);
+            Assert.Equal(usuario.Nome, result.Nome);
+            Assert.Equal(usuario.Email, result.Email);
+            Assert.Equal(usuario.AccessToken, result.AccessToken);
+        }
+
+        [Fact]
+        public void Autenticar_UsuarioInvalido_LançaExceção()
+        {
+            // Arrange
+            var requestModel = new AutenticarRequestModel
+            {
+                Email = "teste@usuario.com",
+                Senha = "senha123"
+            };
+
+            _mockUsuarioDomainService.Setup(s => s.Autenticar(requestModel.Email, requestModel.Senha)).Throws(new Exception("Usuário não encontrado."));
+
+            // Act & Assert
+            Assert.Throws<Exception>(() => _usuarioAppService.Autenticar(requestModel));
+        }
     }
 }

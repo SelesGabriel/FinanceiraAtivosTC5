@@ -3,9 +3,9 @@ name: CI for C#
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
-    branches:
+    master:
       - main
 
 jobs:

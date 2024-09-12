@@ -70,7 +70,7 @@ Pronto, agora a aplicação esta rodando. Segue o link do swagger:
 http://localhost:5012/swagger/index.html
 ```
 
-## Repôs Front end
+## Repositório Front end
 https://github.com/simpmendes/tech-challenge-front
 
 ## Documentação

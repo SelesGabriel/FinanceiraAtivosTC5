@@ -69,6 +69,11 @@ Pronto, agora a aplicação esta rodando. Segue o link do swagger:
 ```
 http://localhost:5012/swagger/index.html
 ```
+## Front-End
+
+Segue o link do front-end do projeto:
+
+https://github.com/simpmendes/tech-challenge-front
 
 ## Documentação
 

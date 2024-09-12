@@ -81,6 +81,10 @@ Segue abaixo o link.
 
 https://miro.com/app/board/uXjVKqBpXO8=/
 
+Segue repositório do front-end do projeto:
+
+https://github.com/simpmendes/tech-challenge-front
+
 Obs: Caso não consiga visualizar, favor solicitar acesso ao administrador
 
 ## Tecnologias
